@@ -65,7 +65,7 @@ function addLogEntry(message, kind = 'info') {
     }
 
     const colors = {
-        info: 'text-cyan-300',
+        info: 'text-emerald-300',
         online: 'text-emerald-300',
         alert: 'text-rose-300',
         warning: 'text-amber-300'
@@ -248,8 +248,8 @@ function initializeChart() {
                     label: 'Polvo PM10 (Âµg/mÂ³)',
                     data: [],
                     yAxisID: 'pm10',
-                    borderColor: '#fbbf24',
-                    backgroundColor: 'rgba(251, 191, 36, .12)',
+                    borderColor: '#a3e635',
+                    backgroundColor: 'rgba(163, 230, 53, .12)',
                     borderWidth: 2,
                     pointRadius: 2,
                     tension: .3
@@ -258,8 +258,8 @@ function initializeChart() {
                     label: 'Gas VOC (ppm)',
                     data: [],
                     yAxisID: 'voc',
-                    borderColor: '#22d3ee',
-                    backgroundColor: 'rgba(34, 211, 238, .1)',
+                    borderColor: '#34d399',
+                    backgroundColor: 'rgba(52, 211, 153, .1)',
                     borderWidth: 2,
                     pointRadius: 2,
                     tension: .3
@@ -290,7 +290,7 @@ function initializeChart() {
                     type: 'linear',
                     position: 'left',
                     beginAtZero: true,
-                    title: { display: true, text: 'PM10 (Âµg/mÂ³)', color: '#fbbf24' },
+                    title: { display: true, text: 'PM10 (Âµg/mÂ³)', color: '#a3e635' },
                     grid: { color: 'rgba(148, 163, 184, .08)' },
                     ticks: { color: '#94a3b8' }
                 },
@@ -298,7 +298,7 @@ function initializeChart() {
                     type: 'linear',
                     position: 'right',
                     beginAtZero: true,
-                    title: { display: true, text: 'VOC (ppm)', color: '#22d3ee' },
+                    title: { display: true, text: 'VOC (ppm)', color: '#34d399' },
                     grid: { drawOnChartArea: false },
                     ticks: { color: '#94a3b8' }
                 }

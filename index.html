@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#07111f">
+    <meta name="theme-color" content="#07150f">
     <title>EcoObra | Monitor de calidad del aire</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,7 +15,7 @@
     <header class="border-b border-slate-800/80 bg-slate-950/60">
         <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-8">
             <div class="flex items-center gap-3">
-                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-slate-950 shadow-lg shadow-emerald-950/50">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 to-lime-400 text-slate-950 shadow-lg shadow-emerald-950/50">
                     <i class="fa-solid fa-leaf text-xl"></i>
                 </div>
                 <div>
@@ -40,7 +40,7 @@
     <main class="mx-auto max-w-7xl space-y-6 px-4 py-7 lg:px-8 lg:py-10">
         <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
-                <p class="mb-2 text-xs font-semibold uppercase tracking-[.2em] text-cyan-400">Panel de monitoreo</p>
+                <p class="mb-2 text-xs font-semibold uppercase tracking-[.2em] text-emerald-400">Panel de monitoreo</p>
                 <h2 class="text-2xl font-bold text-white sm:text-3xl">Calidad del aire</h2>
                 <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
                     Lecturas y estado del nodo EcoObra recibidos por MQTT.
@@ -48,7 +48,7 @@
             </div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-xs text-slate-400">
                 <span class="mr-2 text-slate-500">TEMA</span>
-                <code class="break-all text-cyan-300">utp/ds8/equipo_luis/ecoobra/#</code>
+                <code class="break-all text-emerald-300">utp/ds8/equipo_luis/ecoobra/#</code>
             </div>
         </section>
 
@@ -78,7 +78,7 @@
                             <span class="text-sm text-slate-400">ppm</span>
                         </p>
                     </div>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
                         <i class="fa-solid fa-wind"></i>
                     </span>
                 </div>
@@ -145,7 +145,7 @@
         </section>
 
         <aside class="rounded-xl border border-slate-800/80 bg-slate-900/40 px-4 py-3 text-xs leading-5 text-slate-400">
-            <i class="fa-solid fa-circle-info mr-2 text-cyan-400"></i>
+            <i class="fa-solid fa-circle-info mr-2 text-emerald-400"></i>
             El dashboard se conecta directamente a HiveMQ por WebSocket. Para guardar el historial en archivos CSV, mantÃ©n tambiÃ©n en ejecuciÃ³n <code class="text-slate-300">backend_ecoobra.py</code>.
         </aside>
     </main>
