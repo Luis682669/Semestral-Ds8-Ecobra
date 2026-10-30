@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+    color-scheme: dark;
+    font-family: 'DM Sans', sans-serif;
+    background: #07111f;
+    color: #e2e8f0;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse at 12% 0%, rgba(14, 116, 144, .17), transparent 38rem),
+        radial-gradient(ellipse at 90% 15%, rgba(16, 185, 129, .1), transparent 32rem),
+        #07111f;
+}
+
+h1, h2, h3, .metric-value {
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.panel {
+    background: rgba(15, 27, 44, .82);
+    border: 1px solid rgba(148, 163, 184, .13);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .14);
+}
+
+.status-dot {
+    box-shadow: 0 0 0 4px rgba(148, 163, 184, .1);
+}
+
+.scrollbar::-webkit-scrollbar { width: 5px; }
+.scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
