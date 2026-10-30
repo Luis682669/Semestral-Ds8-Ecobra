@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07111f">
+    <title>EcoObra | Monitor de calidad del aire</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+        :root {
+            color-scheme: dark;
+            font-family: 'DM Sans', sans-serif;
+            background: #07111f;
+            color: #e2e8f0;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(ellipse at 12% 0%, rgba(14, 116, 144, .17), transparent 38rem),
+                radial-gradient(ellipse at 90% 15%, rgba(16, 185, 129, .1), transparent 32rem),
+                #07111f;
+        }
+
+        h1, h2, h3, .metric-value {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .panel {
+            background: rgba(15, 27, 44, .82);
+            border: 1px solid rgba(148, 163, 184, .13);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .14);
+        }
+
+        .status-dot {
+            box-shadow: 0 0 0 4px rgba(148, 163, 184, .1);
+        }
+
+        .scrollbar::-webkit-scrollbar { width: 5px; }
+        .scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+    </style>
+</head>
+<body>
+    <header class="border-b border-slate-800/80 bg-slate-950/60">
+        <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-slate-950 shadow-lg shadow-emerald-950/50">
+                    <i class="fa-solid fa-leaf text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[.24em] text-emerald-400">UTP · DS8 · IoT</p>
+                    <h1 class="text-xl font-bold tracking-tight text-white sm:text-2xl">EcoObra</h1>
+                    <p class="text-xs text-slate-400">Monitoreo de calidad del aire en tiempo real</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <div id="connectionBadge" class="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300" role="status" aria-live="polite">
+                    <span id="connectionDot" class="status-dot h-2 w-2 rounded-full bg-slate-500"></span>
+                    <span id="connectionText">Desconectado</span>
+                </div>
+                <button id="connectionButton" type="button" class="rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-bold text-slate-950 transition hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                    <i class="fa-solid fa-plug mr-2"></i><span id="connectionButtonText">Conectar</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl space-y-6 px-4 py-7 lg:px-8 lg:py-10">
+        <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+                <p class="mb-2 text-xs font-semibold uppercase tracking-[.2em] text-cyan-400">Panel de monitoreo</p>
+                <h2 class="text-2xl font-bold text-white sm:text-3xl">Calidad del aire</h2>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                    Lecturas y estado del nodo EcoObra recibidos por MQTT.
+                </p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-xs text-slate-400">
+                <span class="mr-2 text-slate-500">TEMA</span>
+                <code class="break-all text-cyan-300">utp/ds8/equipo_luis/ecoobra/#</code>
+            </div>
+        </section>
+
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen de telemetría">
+            <article class="panel rounded-2xl p-5">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Polvo PM10</p>
+                        <p class="mt-5 flex items-baseline gap-2">
+                            <span id="pm10Value" class="metric-value text-4xl font-bold tracking-tight text-white">--</span>
+                            <span class="text-sm text-slate-400">µg/m³</span>
+                        </p>
+                    </div>
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/10 text-amber-300">
+                        <i class="fa-solid fa-smog"></i>
+                    </span>
+                </div>
+                <p id="pm10Caption" class="mt-4 text-xs text-slate-500">Esperando primera lectura</p>
+            </article>
+
+            <article class="panel rounded-2xl p-5">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Gas VOC</p>
+                        <p class="mt-5 flex items-baseline gap-2">
+                            <span id="vocValue" class="metric-value text-4xl font-bold tracking-tight text-white">--</span>
+                            <span class="text-sm text-slate-400">ppm</span>
+                        </p>
+                    </div>
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300">
+                        <i class="fa-solid fa-wind"></i>
+                    </span>
+                </div>
+                <p id="vocCaption" class="mt-4 text-xs text-slate-500">Esperando primera lectura</p>
+            </article>
+
+            <article id="alarmCard" class="panel rounded-2xl p-5">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Alarma / buzzer</p>
+                        <p id="alarmValue" class="metric-value mt-5 text-2xl font-bold text-slate-300">Sin datos</p>
+                    </div>
+                    <span id="alarmIcon" class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-slate-400">
+                        <i class="fa-solid fa-bell"></i>
+                    </span>
+                </div>
+                <p id="alarmCaption" class="mt-4 text-xs text-slate-500">Se actualiza con la telemetría</p>
+            </article>
+
+            <article class="panel rounded-2xl p-5">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Último dato recibido</p>
+                        <p id="lastReading" class="metric-value mt-5 text-2xl font-bold text-white">--:--:--</p>
+                    </div>
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
+                        <i class="fa-regular fa-clock"></i>
+                    </span>
+                </div>
+                <p id="deviceState" class="mt-4 text-xs text-slate-500">Estado del dispositivo: desconocido</p>
+            </article>
+        </section>
+
+        <section class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,.8fr)]">
+            <article class="panel rounded-2xl p-5 sm:p-6">
+                <div class="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="font-bold text-white">Historial de lecturas</h3>
+                        <p class="mt-1 text-xs text-slate-400">PM10 y VOC · últimos 30 mensajes recibidos</p>
+                    </div>
+                    <button id="clearChartButton" type="button" class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>Limpiar gráfica
+                    </button>
+                </div>
+                <div class="relative h-72 w-full">
+                    <canvas id="readingsChart" aria-label="Gráfica de historial de PM10 y VOC"></canvas>
+                </div>
+                <p class="mt-3 text-[11px] leading-5 text-slate-500">
+                    Cada variable usa su propia escala para facilitar la comparación de su evolución.
+                </p>
+            </article>
+
+            <article class="panel flex min-h-96 flex-col rounded-2xl p-5 sm:p-6">
+                <div class="mb-4 border-b border-slate-800 pb-4">
+                    <h3 class="font-bold text-white">Actividad reciente</h3>
+                    <p class="mt-1 text-xs text-slate-400">Estado y mensajes recibidos del nodo</p>
+                </div>
+                <div id="eventLog" class="scrollbar flex-1 space-y-2 overflow-y-auto" aria-live="polite">
+                    <p id="emptyLog" class="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-xs text-slate-500">
+                        Al conectar, aquí aparecerán los mensajes MQTT.
+                    </p>
+                </div>
+            </article>
+        </section>
+
+        <aside class="rounded-xl border border-slate-800/80 bg-slate-900/40 px-4 py-3 text-xs leading-5 text-slate-400">
+            <i class="fa-solid fa-circle-info mr-2 text-cyan-400"></i>
+            El dashboard se conecta directamente a HiveMQ por WebSocket. Para guardar el historial en archivos CSV, mantén también en ejecución <code class="text-slate-300">backend_ecoobra.py</code>.
+        </aside>
+    </main>
+
+    <footer class="border-t border-slate-800/80 px-4 py-5 text-center text-xs text-slate-500">
+        EcoObra · Universidad Tecnológica de Panamá · 2026
+    </footer>
+
+    <script>
+        const BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
+        const TOPIC_ROOT = 'utp/ds8/equipo_luis/ecoobra';
+        const TOPIC_TELEMETRIA = `${TOPIC_ROOT}/telemetria`;
+        const TOPIC_ESTADO = `${TOPIC_ROOT}/estado`;
+        const MAX_POINTS = 30;
+        const STALE_AFTER_MS = 7000;
+
+        const elements = {
+            connectionBadge: document.getElementById('connectionBadge'),
+            connectionDot: document.getElementById('connectionDot'),
+            connectionText: document.getElementById('connectionText'),
+            connectionButton: document.getElementById('connectionButton'),
+            connectionButtonText: document.getElementById('connectionButtonText'),
+            pm10Value: document.getElementById('pm10Value'),
+            pm10Caption: document.getElementById('pm10Caption'),
+            vocValue: document.getElementById('vocValue'),
+            vocCaption: document.getElementById('vocCaption'),
+            alarmCard: document.getElementById('alarmCard'),
+            alarmValue: document.getElementById('alarmValue'),
+            alarmIcon: document.getElementById('alarmIcon'),
+            alarmCaption: document.getElementById('alarmCaption'),
+            lastReading: document.getElementById('lastReading'),
+            deviceState: document.getElementById('deviceState'),
+            eventLog: document.getElementById('eventLog'),
+            emptyLog: document.getElementById('emptyLog')
+        };
+
+        let client = null;
+        let chart = null;
+        let lastTelemetryAt = null;
+        let intentionalDisconnect = false;
+
+        function setConnectionStatus(status, label) {
+            const styles = {
+                connected: {
+                    badge: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+                    dot: 'bg-emerald-400',
+                    button: 'bg-rose-500 hover:bg-rose-400'
+                },
+                connecting: {
+                    badge: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+                    dot: 'bg-amber-400 animate-pulse',
+                    button: 'bg-slate-700 hover:bg-slate-600'
+                },
+                disconnected: {
+                    badge: 'border-slate-700 bg-slate-900 text-slate-400',
+                    dot: 'bg-slate-500',
+                    button: 'bg-emerald-500 hover:bg-emerald-400'
+                }
+            };
+            const style = styles[status];
+            elements.connectionBadge.className = `inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold ${style.badge}`;
+            elements.connectionDot.className = `status-dot h-2 w-2 rounded-full ${style.dot}`;
+            elements.connectionText.textContent = label;
+            elements.connectionButton.className = `rounded-xl px-4 py-2.5 text-xs font-bold text-slate-950 transition focus:outline-none focus:ring-2 focus:ring-emerald-300 ${style.button}`;
+            elements.connectionButtonText.textContent = status === 'connected' ? 'Desconectar' : status === 'connecting' ? 'Conectando...' : 'Conectar';
+            elements.connectionButton.disabled = status === 'connecting';
+            elements.connectionButton.classList.toggle('cursor-not-allowed', status === 'connecting');
+        }
+
+        function addLogEntry(message, kind = 'info') {
+            if (elements.emptyLog) {
+                elements.emptyLog.remove();
+                elements.emptyLog = null;
+            }
+
+            const colors = {
+                info: 'text-cyan-300',
+                online: 'text-emerald-300',
+                alert: 'text-rose-300',
+                warning: 'text-amber-300'
+            };
+            const entry = document.createElement('div');
+            entry.className = 'flex gap-3 rounded-xl border border-slate-800/80 bg-slate-950/40 px-3 py-2.5 text-xs';
+
+            const time = document.createElement('time');
+            time.className = 'shrink-0 font-mono text-slate-500';
+            time.textContent = new Date().toLocaleTimeString('es-PA', { hour12: false });
+
+            const text = document.createElement('span');
+            text.className = `min-w-0 break-words ${colors[kind] || colors.info}`;
+            text.textContent = message;
+
+            entry.append(time, text);
+            elements.eventLog.prepend(entry);
+            while (elements.eventLog.children.length > 40) {
+                elements.eventLog.lastElementChild.remove();
+            }
+        }
+
+        function setDeviceState(value) {
+            const online = value === 'ONLINE';
+            elements.deviceState.textContent = `Estado del dispositivo: ${online ? 'En línea' : 'Fuera de línea'}`;
+            elements.deviceState.className = `mt-4 text-xs ${online ? 'text-emerald-300' : 'text-rose-300'}`;
+            addLogEntry(`Dispositivo ${online ? 'ONLINE' : 'OFFLINE'}`, online ? 'online' : 'alert');
+        }
+
+        function normalizeAlarm(value) {
+            if (value === true || value === 1 || value === '1' || value === 'true') return true;
+            if (value === false || value === 0 || value === '0' || value === 'false') return false;
+            return null;
+        }
+
+        function handleTelemetry(payload) {
+            let data;
+            try {
+                data = JSON.parse(payload);
+            } catch (error) {
+                addLogEntry('Telemetría descartada: el mensaje no contiene JSON válido.', 'warning');
+                return;
+            }
+
+            const pm10 = Number(data.polvo_pm10);
+            const voc = Number(data.gas_voc);
+            if (!Number.isFinite(pm10) || !Number.isFinite(voc) || pm10 < 0 || pm10 > 1000 || voc < 0) {
+                addLogEntry('Telemetría descartada: valores PM10 o VOC inválidos.', 'warning');
+                return;
+            }
+
+            lastTelemetryAt = Date.now();
+            elements.pm10Value.textContent = pm10.toLocaleString('es-PA', { maximumFractionDigits: 1 });
+            elements.vocValue.textContent = voc.toLocaleString('es-PA', { maximumFractionDigits: 1 });
+            elements.pm10Caption.textContent = 'Lectura recibida del sensor de polvo';
+            elements.vocCaption.textContent = 'Lectura recibida del sensor de gas';
+            elements.lastReading.textContent = new Date(lastTelemetryAt).toLocaleTimeString('es-PA', { hour12: false });
+            elements.deviceState.textContent = 'Estado del dispositivo: En línea';
+            elements.deviceState.className = 'mt-4 text-xs text-emerald-300';
+
+            const alarm = normalizeAlarm(data.actuador_buzzer);
+            if (alarm === null) {
+                elements.alarmValue.textContent = 'Sin dato';
+                elements.alarmValue.className = 'metric-value mt-5 text-2xl font-bold text-slate-300';
+                elements.alarmCaption.textContent = 'El mensaje no incluyó actuador_buzzer';
+                elements.alarmCard.className = 'panel rounded-2xl p-5';
+                elements.alarmIcon.className = 'flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-slate-400';
+            } else {
+                elements.alarmValue.textContent = alarm ? 'ACTIVADA' : 'Inactiva';
+                elements.alarmValue.className = `metric-value mt-5 text-2xl font-bold ${alarm ? 'text-rose-300' : 'text-emerald-300'}`;
+                elements.alarmCaption.textContent = alarm ? 'El buzzer está indicando una alerta' : 'El buzzer no está activo';
+                elements.alarmCard.className = `panel rounded-2xl p-5 ${alarm ? 'border-rose-500/40' : ''}`;
+                elements.alarmIcon.className = `flex h-10 w-10 items-center justify-center rounded-xl ${alarm ? 'bg-rose-500/10 text-rose-300' : 'bg-emerald-500/10 text-emerald-300'}`;
+            }
+
+            if (chart) {
+                const timestamp = new Date(lastTelemetryAt).toLocaleTimeString('es-PA', { hour12: false });
+                chart.data.labels.push(timestamp);
+                chart.data.datasets[0].data.push(pm10);
+                chart.data.datasets[1].data.push(voc);
+                while (chart.data.labels.length > MAX_POINTS) {
+                    chart.data.labels.shift();
+                    chart.data.datasets.forEach(dataset => dataset.data.shift());
+                }
+                chart.update();
+            }
+
+            addLogEntry(`Telemetría · PM10 ${pm10} µg/m³ · VOC ${voc} ppm · alarma ${alarm === null ? 'sin dato' : alarm ? 'activa' : 'inactiva'}`, alarm ? 'alert' : 'info');
+        }
+
+        function handleMessage(topic, payload) {
+            if (topic === TOPIC_ESTADO) {
+                const deviceStatus = payload.trim().toUpperCase();
+                if (deviceStatus === 'ONLINE' || deviceStatus === 'OFFLINE') {
+                    setDeviceState(deviceStatus);
+                } else {
+                    addLogEntry(`Estado descartado: valor no reconocido (${deviceStatus}).`, 'warning');
+                }
+                return;
+            }
+
+            if (topic === TOPIC_TELEMETRIA) {
+                handleTelemetry(payload);
+            }
+        }
+
+        function connectMqtt() {
+            if (typeof mqtt === 'undefined') {
+                setConnectionStatus('disconnected', 'Error: MQTT.js no cargó');
+                addLogEntry('No se pudo cargar MQTT.js. Revisa la conexión a Internet y recarga la página.', 'warning');
+                return;
+            }
+
+            intentionalDisconnect = false;
+            setConnectionStatus('connecting', 'Conectando...');
+            const clientId = `ecoobra-dashboard-${Math.random().toString(16).slice(2, 10)}`;
+            client = mqtt.connect(BROKER_URL, {
+                clientId,
+                clean: true,
+                connectTimeout: 10000,
+                reconnectPeriod: 3000
+            });
+
+            client.on('connect', () => {
+                setConnectionStatus('connected', 'Conectado a HiveMQ');
+                addLogEntry('Conectado a HiveMQ; suscribiendo a los temas de EcoObra.', 'online');
+                client.subscribe(`${TOPIC_ROOT}/#`, { qos: 0 }, error => {
+                    if (error) {
+                        addLogEntry(`Error al suscribirse a MQTT: ${error.message}`, 'warning');
+                    } else {
+                        addLogEntry(`Suscripción activa: ${TOPIC_ROOT}/#`, 'info');
+                    }
+                });
+            });
+
+            client.on('message', (topic, message) => {
+                handleMessage(topic, message.toString());
+            });
+
+            client.on('reconnect', () => {
+                setConnectionStatus('connecting', 'Reconectando...');
+            });
+
+            client.on('offline', () => {
+                if (!intentionalDisconnect) {
+                    setConnectionStatus('disconnected', 'Sin conexión con HiveMQ');
+                }
+            });
+
+            client.on('error', error => {
+                console.error('Error MQTT:', error);
+                addLogEntry(`Error MQTT: ${error.message}`, 'warning');
+            });
+
+            client.on('close', () => {
+                if (!intentionalDisconnect) {
+                    setConnectionStatus('disconnected', 'Desconectado');
+                }
+            });
+        }
+
+        function disconnectMqtt() {
+            intentionalDisconnect = true;
+            if (client) {
+                client.end(true);
+                client = null;
+            }
+            setConnectionStatus('disconnected', 'Desconectado');
+            addLogEntry('Conexión MQTT cerrada.', 'info');
+        }
+
+        function initializeChart() {
+            const context = document.getElementById('readingsChart').getContext('2d');
+            chart = new Chart(context, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Polvo PM10 (µg/m³)',
+                            data: [],
+                            yAxisID: 'pm10',
+                            borderColor: '#fbbf24',
+                            backgroundColor: 'rgba(251, 191, 36, .12)',
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            tension: .3
+                        },
+                        {
+                            label: 'Gas VOC (ppm)',
+                            data: [],
+                            yAxisID: 'voc',
+                            borderColor: '#22d3ee',
+                            backgroundColor: 'rgba(34, 211, 238, .1)',
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            tension: .3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 180 },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#cbd5e1',
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                padding: 18
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(148, 163, 184, .08)' },
+                            ticks: { color: '#64748b', maxRotation: 0, autoSkip: true }
+                        },
+                        pm10: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: true,
+                            title: { display: true, text: 'PM10 (µg/m³)', color: '#fbbf24' },
+                            grid: { color: 'rgba(148, 163, 184, .08)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        voc: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            title: { display: true, text: 'VOC (ppm)', color: '#22d3ee' },
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        elements.connectionButton.addEventListener('click', () => {
+            if (client && client.connected) {
+                disconnectMqtt();
+            } else {
+                if (client) {
+                    intentionalDisconnect = true;
+                    client.end(true);
+                    client = null;
+                }
+                connectMqtt();
+            }
+        });
+
+        document.getElementById('clearChartButton').addEventListener('click', () => {
+            if (!chart) return;
+            chart.data.labels = [];
+            chart.data.datasets.forEach(dataset => { dataset.data = []; });
+            chart.update();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeChart();
+            connectMqtt();
+        });
+
+        window.setInterval(() => {
+            if (lastTelemetryAt && Date.now() - lastTelemetryAt > STALE_AFTER_MS) {
+                elements.deviceState.textContent = 'Estado del dispositivo: sin datos recientes';
+                elements.deviceState.className = 'mt-4 text-xs text-amber-300';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
