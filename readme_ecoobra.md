@@ -32,7 +32,7 @@ Este repositorio contiene el **Avance 3**, enfocado en la resiliencia de comunic
 
 ---
 
-## 🚀 Instrucciones de Ejecución
+## Instrucciones de Ejecución
 
 ### 1. Requisitos Previos (Backend)
 Para ejecutar la estación receptora en su computadora, necesita tener Python instalado y la librería `paho-mqtt`.
