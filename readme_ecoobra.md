@@ -8,7 +8,7 @@ EcoObra IoT - Sistema de Monitoreo para Construcciones
 
 ---
 
-## 📖 Descripción del Proyecto
+## Descripción del Proyecto
 **EcoObra IoT** es un nodo de monitoreo ambiental diseñado para obras de construcción. Su objetivo es medir en tiempo real los niveles de polvo (PM10) y gases (VOC) para proteger la salud de los trabajadores y comunidades aledañas. El sistema cuenta con alarmas locales (visuales y sonoras), un botón de pánico físico y comunicación en tiempo real hacia la nube mediante MQTT.
 
 Este repositorio contiene el **Avance 3**, enfocado en la resiliencia de comunicación, telemetría bidireccional y monitoreo de estado.
