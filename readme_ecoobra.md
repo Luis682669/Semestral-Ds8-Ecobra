@@ -1,19 +1,19 @@
-# 🏗️ EcoObra IoT - Sistema de Monitoreo para Construcciones
+EcoObra IoT - Sistema de Monitoreo para Construcciones
 
 **Universidad Tecnológica de Panamá (UTP)**
 **Facultad de Ingeniería de Sistemas Computacionales**
 **Asignatura:** Herramientas de Programación Aplicada IV
 **Facilitador:** Prof. José Collado
-**Equipo:** Luis, Juan, Jean
+**Equipo:** Luis De Los Rios, Juan Segundo, Jean Batista
 
 ---
 
-## 📖 Descripción del Proyecto
+## Descripción del Proyecto
 **EcoObra IoT** es un nodo de monitoreo ambiental diseñado para obras de construcción. Su objetivo es medir en tiempo real los niveles de polvo (PM10) y gases (VOC) para proteger la salud de los trabajadores y comunidades aledañas. El sistema cuenta con alarmas locales (visuales y sonoras), un botón de pánico físico y comunicación en tiempo real hacia la nube mediante MQTT.
 
 Este repositorio contiene el **Avance 3**, enfocado en la resiliencia de comunicación, telemetría bidireccional y monitoreo de estado.
 
-## ✨ Características de este Avance (Módulo de Comunicación)
+## Características de este Avance (Módulo de Comunicación)
 - **Telemetría JSON:** Transmisión de lecturas de sensores y estado de actuadores cada 2 segundos.
 - **Tolerancia a fallos:** El ESP32 es capaz de detectar caídas de Wi-Fi o del Broker MQTT y reconectarse automáticamente sin detener su funcionamiento local.
 - **Last Will (Testamento):** Si el nodo pierde energía repentinamente, el broker notifica automáticamente su estado `OFFLINE`.
@@ -22,7 +22,7 @@ Este repositorio contiene el **Avance 3**, enfocado en la resiliencia de comunic
 
 ---
 
-## 🗂️ Esquema de Temas MQTT
+## Esquema de Temas MQTT
 
 | Tema | Dirección | Contenido (Payload) | Retenido |
 | :--- | :--- | :--- | :---: |
@@ -32,7 +32,7 @@ Este repositorio contiene el **Avance 3**, enfocado en la resiliencia de comunic
 
 ---
 
-## 🚀 Instrucciones de Ejecución
+## Instrucciones de Ejecución
 
 ### 1. Requisitos Previos (Backend)
 Para ejecutar la estación receptora en su computadora, necesita tener Python instalado y la librería `paho-mqtt`.
@@ -54,9 +54,9 @@ python backend_ecoobra.py
 ```
 3. El programa comenzará a escuchar los datos en tiempo real, mostrará las alertas en consola y generará automáticamente los archivos `telemetria.csv` y `eventos.csv`.
 
----
 
-## 🛠️ Ejemplos de Órdenes Remotas (JSON)
+
+## Ejemplos de Órdenes Remotas (JSON)
 
 Para probar la recepción de órdenes, publique los siguientes mensajes en el tema `utp/ds8/equipo_luis/ecoobra/ordenes`:
 
