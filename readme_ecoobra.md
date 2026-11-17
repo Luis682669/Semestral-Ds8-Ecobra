@@ -69,3 +69,19 @@ Para probar la recepción de órdenes, publique los siguientes mensajes en el te
 ```json
 {"desactivar_panico": true}
 ```
+## Comportamiento Local ante Fallos de Conexión
+Mientras el dispositivo no tiene conexión Wi-Fi o MQTT:
+1. **Operación autónoma ininterrumpida:** El bucle de sensores sigue leyendo polvo, gas y botón de pánico cada 2 segundos y accionando los indicadores locales (LED RGB / pantalla TFT y actuador) sin bloquearse.
+2. **Reconexión con espera creciente (Exponential Backoff):** El nodo intenta reconectar el Wi-Fi y el cliente MQTT iniciando en 5 segundos y duplicando el tiempo en cada fallo (5 s, 10 s, 20 s, 40 s) hasta un tope máximo de 60 segundos, restableciéndose a 5 segundos en cuanto vuelve la conexión.
+
+## Registro de Pruebas Documentadas
+
+| Escenario | Cómo se provocó | Resultado esperado | Resultado observado |
+| :--- | :--- | :--- | :--- |
+| 1. Telemetría nominal | Encendido del nodo con aire limpio conectado al broker | Publicación JSON cada 2 s, validación exitosa en receptor, estado `ONLINE` y guardado en CSV | Se reciben tramas cada 2 s, el backend valida rangos de polvo/gas y las registra en el CSV |
+| 2. Cambio de umbral válido | Publicación MQTT de `{"umbral_polvo": 180}` en el tema de órdenes | El nodo actualiza el umbral y muestra confirmación en consola | Umbral actualizado a 180.0 µg/m³ inmediatamente sin errores |
+| 3. Orden con valor o JSON inválido | Envío de `{"desactivar_panico": "texto"}` y luego `{json_roto` | Avisos diferenciados: error de validación de tipo booleano en el primero y error de formato JSON en el segundo | Consola distingue explícitamente el aviso de validación de `desactivar_panico` frente al error de sintaxis JSON |
+| 4. Telemetría fuera de rango | Envío manual al tema de telemetría de `{"polvo": 50, "gas": -25, "estado_actuador": "SEGURO"}` | El receptor descarta el mensaje por gas negativo, no guarda en CSV y no actualiza el estado del monitor | Mensaje rechazado por el validador de rangos sin detener la ejecución de `backend_ecoobra.py` |
+| 5. Silencio de datos (`SIN_DATOS`) | Pausa del envío de telemetría manteniendo la conexión TCP activa por más de 7 segundos | Al superar el umbral configurable de 7 s (> 3 intervalos), el monitor registra el cambio a `SIN_DATOS` | El monitor detectó los 7 s de silencio y registró la transición `ONLINE` -> `SIN_DATOS` en el CSV de eventos |
+| 6. Caída abrupta y Last Will (`OFFLINE`) | Desconexión física de la energía del ESP32 | El broker publica el testamento `OFFLINE` retenido y el receptor registra el cambio a `OFFLINE` | El receptor capturó el Last Will y registró el evento `OFFLINE` de inmediato |
+| 7. Reconexión con Backoff | Apagado temporal del broker MQTT durante 40 segundos | El nodo sigue evaluando alertas localmente y espacia los reintentos (5 s, 10 s, 20 s...) hasta reconectar y publicar `ONLINE` | Los sensores locales siguieron activos y la reconexión se efectuó con espera creciente hasta restaurar `ONLINE` |

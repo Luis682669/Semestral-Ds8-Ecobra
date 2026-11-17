@@ -1,0 +1,14 @@
+timestamp,nodo,estado_anterior,estado_nuevo,motivo
+2026-11-16 20:40:49,nodo1,DESCONOCIDO,ONLINE,Conexión reportada por el nodo
+2026-11-16 20:41:03,nodo1,ONLINE,SIN_DATOS,Silencio de telemetría por 7.3s (> umbral de 7.0s)
+2026-11-16 20:41:05,nodo1,SIN_DATOS,OFFLINE,Mensaje de estado / Last Will recibido
+2026-11-16 20:41:07,nodo1,OFFLINE,ONLINE,Conexión reportada por el nodo
+2026-11-16 20:41:58,nodo1,ONLINE,SIN_DATOS,Silencio de telemetría por 7.4s (> umbral de 7.0s)
+2026-11-16 20:42:00,nodo1,SIN_DATOS,OFFLINE,Mensaje de estado / Last Will recibido
+2026-11-16 20:42:15,nodo1,OFFLINE,ONLINE,Conexión reportada por el nodo
+2026-11-16 20:42:54,nodo1,ONLINE,SIN_DATOS,Silencio de telemetría por 7.2s (> umbral de 7.0s)
+2026-11-16 20:42:56,nodo1,SIN_DATOS,OFFLINE,Mensaje de estado / Last Will recibido
+2026-11-16 20:47:22,nodo1,DESCONOCIDO,OFFLINE,Mensaje de estado / Last Will recibido
+2026-11-16 20:47:47,nodo1,OFFLINE,ONLINE,Conexión reportada por el nodo
+2026-11-16 20:50:06,nodo1,ONLINE,SIN_DATOS,Silencio de telemetría por 7.2s (> umbral de 7.0s)
+2026-11-16 20:50:08,nodo1,SIN_DATOS,OFFLINE,Mensaje de estado / Last Will recibido
